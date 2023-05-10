@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>PEDIDO</title>
+<link href="../css/estylo.css" rel="stylesheet" type="text/css" media="all" />
+<style>
+.buscador{
+  width: 100%;
+  text-align: center;
+  padding: 5px;
+}  
+#contenItem{
+  width: 100%;
+  height: calc(100vh - 90px);
+  overflow-y: scroll;
+}
+</style>
+</head>
+<body onload="startDB();">
+<div class="conteMenu">
+  <span class="icon back" onclick="window.history.back()"></span>
+  <span class="icon address-card" onclick="lnk('clientesEdit')"></span> 
+  <span class="icon shopping" onclick="lnk('editarProforma')"></span> 
+  <span id="conection"></span>   
+</div>  
+
+<div class="buscador">
+  <input type="text" id="buscar" onkeyup="filter()" class="input_ef" placeholder="Buscar Productos">
+</div>
+
+<div id="contenItem"></div>
+
+<script src="../js/apiBakend.js"></script>
+<script src="../js/mainDB.js"></script>
+<script>
+var items
+async function Inventario_lee(){
+  let e = await read_DB('inventario')
+  let outerHTML = '';
+  for (let i = 0; i< e.length; i++) {
+    const et = e[i];
+    outerHTML += 
+    `<div class="item" id="${et.id}">
+      <div class="fila1">
+        <div class="fila1a" data-itm id="ref_${et.id}">${et.produ}</div>
+        <div class="fila1b">
+          <span>${et.marca}</span> &nbsp; 
+          <span onclick="alCarrito('${et.id}')" class="icon Plus1"></span> 
+          <span onclick="quitarCarro('${et.id}')" class="icon BORRAR hiden"></span>
+        </div>
+      </div>
+      <div class="fila2">Unidad: <span>${et.unidad}</span></div>
+      <div class="fila3">
+        <div>DISP. <span class="disponible">${et.cantRes}</span></div>
+        <div>Contado. <span>${et.puCont}</span></div> 
+        <div>Credito. <span>${et.puCret}</span></div>  
+      </div>
+    </div>` 
+  }
+  document.querySelector("#contenItem").innerHTML = outerHTML;
+  items = document.querySelectorAll('[data-itm]')
+  marcarItems()
+}
+
+var desc = storageDef("descuentoEdit","15")
+var carrito = storageJson("carritoEdit")
+async function alCarrito(id){
+  let t = await read_ID_DB(id,"inventario")
+  let pu = desc=="15"?t.puCont:t.puCret
+  carrito[id] = {
+    "id":id,
+    "produ":t.produ,
+    "marca":t.marca,
+    "cant":"",
+    "pu":pu,
+    "tot":0,
+    "puVent":t.puVent,
+    "puComp":t.puComp,
+    "unidad":t.unidad
+  }
+  localStorage.setItem("carritoEdit",JSON.stringify(carrito))
+  marcarItems()
+}
+function marcarItems(){
+  for (const key in carrito) {
+    document.getElementById(key).classList.add("marcado")
+    document.getElementById(key).querySelectorAll("span")[1].classList.add("hiden")
+    document.getElementById(key).querySelectorAll("span")[2].classList.remove("hiden")
+  }
+}
+function quitarCarro(id){ 
+  delete carrito[id]; 
+  localStorage.setItem("carritoEdit",JSON.stringify(carrito))
+  document.getElementById(id).classList.remove("marcado")
+  document.getElementById(id).querySelectorAll("span")[1].classList.remove("hiden")
+  document.getElementById(id).querySelectorAll("span")[2].classList.add("hiden")
+}
+
+function init_m(){ 
+  Inventario_lee() 
+  openSocket();
+}
+</script>
+</body>
+</html>

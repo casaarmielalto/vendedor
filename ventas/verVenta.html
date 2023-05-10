@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Vende Modo Movil</title>
+<link href="../css/estylo.css" rel="stylesheet" type="text/css" media="all" />
+<style>
+.formularioV1{ margin-top: 0px; max-width: 90%;}
+#productosList{
+  overflow-y: scroll;
+  height: calc(100vh - 290px);
+  margin-top: 5px;
+}
+.conDow{
+  width: 50px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+</style>
+</head>
+<body onload="startDB();">
+<div class="conteMenu">
+  <span class="icon back" onclick="window.history.back()"></span>
+  <div class="titMenu">DATOS DE LA PROFORMA</div>
+  <div class="conDow">
+    <span id="btnDelete" class="icon borrarWite" onclick="borrarVenta()"></span> 
+    <span id="conection"></span>
+  </div>  
+</div> 
+
+<div class="formularioV1">
+  <div class="textDataInf">
+    <div>Cliente :</div>
+    <div data-cli id="cli" ></div>
+  </div>
+  <div class="textDataInf">
+    <div>NIT :</div>
+    <div data-cli id="nit" ></div>
+  </div>
+  <div class="textDataInf">
+    <div>Celular :</div>
+    <div data-cli id="cel" ></div>
+  </div>
+  <div class="textDataInf">
+    <div>Direccion :</div>
+    <div data-cli id="dir" ></div>
+  </div>
+</div>
+
+<div id="productosList" class="contenItems"></div>
+
+<div class="formularioV1">
+  <div class="ConTextDataInfT2">
+    <div class="textDataInfT2">
+      <div>Acuenta Bs.</div>
+      <div data-dat id="acuenta"></div>
+    </div>
+    <div class="textDataInfT2">
+      <div>Saldo: Bs.</div>
+      <div data-dat id="saldo"></div>
+    </div>
+    <div class="textDataInfT2">
+      <div>Total: Bs.</div>
+      <div data-dat id="total"></div>
+    </div>    
+  </div>
+  <div class="textDataInf">
+    <div>Descuento :</div>
+    <div id="descuento" ></div>
+  </div>
+</div>
+
+<script src="../js/apiBakend.js"></script>
+<script src="../js/mainDB.js"></script>
+<script>
+var idVent = localStorage.getItem('idVenta')
+var carrito
+async function llenarDatos(){
+  let datVen = await read_ID_DB(idVent,'ventas')
+  carrito = datVen["proforma"]
+  rederVenta()
+  let writ = await json_to_from("cli",datVen["cliente"])
+  let wri2 = await json_to_from("dat",datVen)
+  document.getElementById("descuento").textContent = datVen["descuento"]+" %"
+}
+
+function rederVenta(){
+  var outerHTML = '';
+  for (const key in carrito) {
+    outerHTML += `
+    <div class="itemProf">
+      <div class="fila1">
+        <div class="fila1a">${carrito[key].produ}</div>
+        <span>${carrito[key].marca}</span>  
+      </div>
+      <div class="filP2">
+        <div>${carrito[key].cant}</div>
+        <div>${carrito[key].unidad}</div>
+        <div>
+          <div>p.u.</div> 
+          <div>${carrito[key].pu}</div>
+        </div>
+        <div>${carrito[key].tot.toFixed(1)}</div>
+      </div>
+    </div>`    
+  }
+  document.querySelector("#productosList").innerHTML = outerHTML;
+}
+
+/**** borrar venta nube y local y sincro ****/
+async function borrarVenta(){
+  let r = prompt("borrar ?")
+  if(r=="si"){
+    loadData()
+    let del = await deleteVenta(idVent)
+    if(del=="delet"){ 
+      await del_DB(idVent,'ventas')
+      successDat()
+      sendMessage("ventaBorrado")
+      document.getElementById("btnDelete").classList.add("hiden")
+    }
+  }
+}
+/**** borrar venta nube y local y sincro ****/
+
+function init_m(){ 
+  llenarDatos() 
+  openSocket()
+}
+</script>   
+</body>
+</html>

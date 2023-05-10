@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="../css/estylo.css">
+<title>descarga ventas</title>
+<style>
+.btn-material{width: 150px;padding: 10px;}
+</style>
+</head>
+<body onload="startDB();">
+<div class="conteMenu">
+  <span class="icon back" onclick="window.history.back()"></span>
+  <div class="titMenu">DESCARGA DE VENTAS</div>
+  <span></span>
+</div>
+<div class="formularioV1">
+  <div class="inputDate">
+    <span>Fecha De Descarga : </span>
+    <div>
+      <div id="buscarDia_Txt"></div>
+      <input data-alumno id="buscarDia" class="pickCalendar" onchange="buscarDia(event)"  type='date'/>
+    </div>
+  </div>
+  <div class="botones">
+    <button class="btn-material verde" onclick="actualizar()">Descarga</button>
+  </div>
+</div>
+
+<script src="../js/mainDB.js"></script>
+<script src="../js/apiBakend.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.3.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.3.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.3.1/firebase-firestore.js"></script>
+<script src="../js/confire.js"></script>
+<script>
+function buscarDia(e){
+  localStorage.setItem("buscarDia",e.target.value)
+  init_m()
+}
+
+async function actualizar(){
+  loadData()
+  let f =new Date(document.getElementById("buscarDia").value) 
+  let nom = storageJson("datUser").nom
+  const tim1 = new Date(f.getFullYear(),f.getMonth(),f.getDate(),0,0,0).getTime();
+  const tim2 = new Date(f.getFullYear(),f.getMonth(),f.getDate(),23,59,59).getTime();
+  let datCloud = await readVentasUserTime(nom,tim1,tim2)
+  let datos = datCloud["record"]
+  for (let i = 0; i < datos.length; i++) {
+    let item = datos[i];
+    let v_reg = await write_DB(item,'ventas')
+    document.getElementById("conter").textContent = datos.length-i//animacion
+    if(item["time"]>timeLocal("timeVEN")){ localStorage.setItem("timeVEN",item["time"]) }
+  }
+  successDat()
+}
+
+async function init_m(){ 
+  document.getElementById("buscarDia_Txt").textContent = fechaForma2(storageDef("buscarDia",fecActInp)) 
+  document.getElementById("buscarDia").value = storageDef("buscarDia",fecActInp)
+}
+
+</script>  
+</body>
+</html>

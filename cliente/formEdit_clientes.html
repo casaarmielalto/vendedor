@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLIENTES</title>
+<link href="../css/estylo.css" rel="stylesheet" type="text/css" media="all" />
+<style>
+
+</style>
+</head>
+<body onload="startDB();">
+<div class="conteMenu">
+  <span class="icon back" onclick="window.history.back()"></span>
+  <div onclick="editarItem()" class="btn-material">Editar Datos</div> 
+  <span></span>  
+</div> 
+
+<div class="formularioV1">
+  <div class="contInput">
+    <input data-itemN id="cli" class="input_ef" type="text" placeholder=" " />
+    <label class="label_ef">Cliente</label>
+  </div>
+  <div class="contInput">
+    <input data-itemN id="cel" class="input_ef" type="number" placeholder=" " />
+    <label class="label_ef">Celular</label>
+  </div>
+  <div class="contInput">
+    <input data-itemN id="dir" class="input_ef" type="text" placeholder=" "/>
+    <label class="label_ef">Direccion</label>
+  </div>
+  <div class="contInput">
+    <input data-itemN id="zona" class="input_ef" type="text" placeholder=" " />
+    <label class="label_ef">Zona</label>
+  </div>
+  <div class="contInput">
+    <input data-itemN id="nit" class="input_ef" type="text" placeholder=" " />
+    <label class="label_ef">Nit</label>
+  </div>
+  <div class="botones">
+    <div onclick="borrarCliente()" class="btn-material danger">Borrar Cliente</div> 
+  </div>
+</div>
+
+<script src="../js/apiBakend.js"></script>
+<script src="../js/mainDB.js"></script>
+<script>
+var idItem = storage('idCliente')
+async function editarItem(){
+  var r = prompt("Esta Seguro de editar..?")
+  loadData()
+  if(r=="si"){
+    let valF = await form_to_json('itemN')
+    valF["codigo"] = idItem
+    valF["id"] = idItem
+    let crea = await cu_clientes(valF)
+    if(crea=="newCreated"){
+      update_DB(valF["id"],valF,'clientes').then(()=>{ successDat(true) })
+    }
+  }
+}
+
+/** borrar en la nube y local **/
+async function borrarCliente(){
+  let r = prompt("Esta seguro de borrar");
+  if(r=="borrar"){
+    loadData()
+    del_clientes(idItem).then((doc) => {
+      console.log(doc)
+      if(doc=="delet"){ del_DB(idItem,'clientes').then(()=>{ successDat(true) }) }
+    }).catch((error)=>{ alert(error) });
+  }
+}
+/** borrar en la nube y local **/
+
+async function init_m(){
+  let item = await read_ID_DB(idItem,'clientes')
+  let v_f = await json_to_from("itemN",item)
+}
+</script> 
+</body>
+</html>

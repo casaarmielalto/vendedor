@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Clientes</title>
+<link href="../css/estylo.css" rel="stylesheet" type="text/css" media="all" />
+<style>
+</style>
+</head>
+<body onload="startDB();">
+<div class="conteMenu">
+  <span class="icon back" onclick="window.history.back()"></span>
+  <div class="titMenu">DATOS DEL CLIENTE</div>
+  <span></span>
+</div>
+
+<div class="formularioV1">
+  <div class="contInput">
+    <input list="list" data-cli id="cli" onchange="cliente(event)" class="input_ef" type="text" placeholder=" "/>
+    <label class="label_ef">Cliente</label>
+    <datalist id="list"></datalist>
+  </div>
+  <div class="contInput">
+    <input data-cli id="nit" class="input_ef" type="text" placeholder=" "/>
+    <label class="label_ef">NIT</label>
+  </div>
+  <div class="contInput">
+    <input data-cli id="cel" class="input_ef" type="text" placeholder=" "/>
+    <label class="label_ef">Celular</label>
+  </div>
+  <div class="contInput">
+    <input data-cli id="zona" class="input_ef" type="text" placeholder=" "/>
+    <label class="label_ef">Zona</label>
+  </div>
+  <div class="contInput">
+    <input data-cli id="dir" class="input_ef" type="text" placeholder=" "/>
+    <label class="label_ef">Direccion</label>
+  </div>
+</div>
+
+<script src="../js/mainDB.js"></script>
+<script>
+var listCli = [{"id":"","cli":"Ninguno"}]
+async function cargarClientes(){
+  let dat = await read_DB('clientes')
+  var outerHTML = '<option>Ninguno</option>';
+  for (let i = 0; i< dat.length; i++) {
+    const et = dat[i];
+    listCli.push(et)
+    outerHTML += `<option>${et.cli.trim()}</option>` 
+  }
+  document.querySelector("#list").innerHTML = outerHTML;
+}
+async function cliente(e){
+  let cli = e.target.value
+  let cliID = (listCli.find(e => e.cli.trim() == cli)).id;
+  let d = await read_ID_DB(cliID,'clientes')
+  let clin = {cli:d.cli,cel:d.cel,dir:d.dir,nit:d.nit,zona:d.zona}
+  if(d==false){ clin = {cli:"Ninguno",cel:"",dir:"",nit:"",zona:""} }
+  localStorage.setItem("clienteEdit",JSON.stringify(clin))
+  window.location.reload()
+}
+async function clienteVer(){
+  var cliente = storageJson("clienteEdit")
+  if(cliente.cli!=undefined){
+    let wrt1 = await json_to_from("cli",cliente)
+  }else{
+    let wrt1 = await formClearInput("cli")
+  }
+} 
+async function init_m(){
+  cargarClientes()
+  clienteVer()
+}
+</script>
+</body>
+</html>

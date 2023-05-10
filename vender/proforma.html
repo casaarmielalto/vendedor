@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>PEDIDO</title>
+<link href="../css/estylo.css" rel="stylesheet" type="text/css" media="all" />
+<style>
+#productosList{
+  overflow-y: scroll;
+  height: calc(100vh - 150px);
+  margin-top: 5px;
+}
+.registroCuentas{
+  width: 100%;
+  margin: auto;
+  display: flex;
+  justify-content: space-around;
+  margin-top: 10px;
+  height: 50px;
+}
+.radioPre{
+  padding: 5px;
+  display: flex;
+  justify-content: space-around;
+}
+.registroCuentas .contInput{ width: 100px;}
+.btn-material{ padding: 3px; margin-bottom: 5px; transform: translateX(30px); }
+#fecha{color: white;font-weight: bold;}
+#informa{margin-left: 20px;}
+#conection{
+  margin-left: 15px;
+}
+</style>
+</head>
+<body onload="startDB();">
+<div class="conteMenu">
+  <span class="icon back" onclick="window.history.back()"></span>
+  <span id="conection"></span>   
+  <span onclick="regVenta()" id="bntVender" class="btn-material">vender</span> 
+  <span id="fecha"></span>
+  <span id="informa" class="icon informa" onclick="informa()"></span>
+</div>  
+
+<div id="productosList"></div>
+
+<div class="registroCuentas">
+  <div class="contInput">
+    <input data-cli id="acuenta" onkeyup="acuentaBs()" class="input_ef" type="number" placeholder=" "/>
+    <label class="label_ef">Acuenta Bs.</label>
+  </div>
+  <div class="contInput">
+    <input data-cli id="saldo" class="input_ef" type="number" placeholder=" " disabled />
+    <label class="label_ef">Saldo: Bs.</label>
+  </div>
+  <div class="contInput">
+    <input data-cli id="sumaTotal" class="input_ef" type="number" placeholder=" " disabled />
+    <label class="label_ef">Total: Bs.</label>
+  </div>
+</div>
+
+<div class="radioPre" id="radioPre">
+  <label for="15">Contado <br> Descuento 15%
+    <input onclick="radioDes(event)"  type="radio" id="15" name="pre">
+  </label>
+  <label for="10">Credito <br> Descuento 10%
+    <input onclick="radioDes(event)"  type="radio" id="10" name="pre">
+  </label>
+</div>
+
+<script src="../js/apiBakend.js"></script>
+<script src="../js/mainDB.js"></script>
+<script>
+var car = storageJson("carrito")
+var desc = storageDef("descuento","15")
+
+async function rederVenta(){
+  let arr = Object.values(car).sort((x, y) => x.produ.localeCompare(y.produ));
+  var outerHTML = '';
+  for (let i = 0; i < arr.length; i++) {
+    const el = arr[i];
+    outerHTML += 
+    `<div class="itemProf">
+      <div class="fila1">
+        <div class="fila1a">${el["produ"]}</div>
+        <div class="fila1b">
+          <span>${el["marca"]}</span>  
+          <span onclick="quitarCarro('${el["id"]}')" class="icon BORRAR"></span> 
+        </div>
+      </div>
+      <div class="filP2">
+        <input onkeyup="imprItem('${el["id"]}')" type="number" value="${el["cant"]}" id="${el["id"]}"/> 
+        <div>${el["unidad"]}</div>
+        <div>
+          <div class="btn-material" onclick="cambioPu('${el["id"]}')">p.u.</div> 
+          <div>${el["pu"]}</div>
+        </div>
+        <div id="t_${el["id"]}">${el["tot"]}</div>
+      </div>
+    </div>`
+  }
+  document.querySelector("#productosList").innerHTML = outerHTML;
+  sumaItems()
+}
+
+function cambioPu(id){
+  let r = prompt("precio unitario")
+  if(r!=null){ 
+    car[id]["pu"] = parseFloat(r)  
+    if(desc=="15"){
+      car[id]["puVent"] = dc2(r/0.85) 
+    }else{
+      car[id]["puVent"] = dc2(r*100/90) 
+    }
+    car[id]["tot"] = dc2(car[id]["cant"]*car[id]["pu"])
+    localStorage.setItem("carrito",JSON.stringify(car))
+    rederVenta()
+  }
+}
+///////////////////////////SECCION DE CALCULOS////////////////////
+let acuenta = storageDef("acuenta",0) 
+let total
+function sumaItems(){
+  total = 0
+  for (const key in car) {
+    let cant = car[key]["cant"]
+    let pu = car[key]["pu"]
+    total += pu*cant
+  }
+  document.getElementById("sumaTotal").value = total.toFixed(2)
+  document.getElementById("acuenta").value = acuenta
+  document.getElementById("saldo").value = (total-acuenta).toFixed(2)
+}
+function imprItem(id){
+  let pu = car[id]["pu"]
+  let cant = ValNum(id)
+  document.getElementById("t_"+id).textContent = (cant*pu).toFixed(2)
+  car[id]["cant"] = cant
+  car[id]["tot"] = dc2(cant*pu)
+  localStorage.setItem("carrito",JSON.stringify(car))
+  sumaItems()
+}
+function acuentaBs(){
+  acuenta = ValNum("acuenta")
+  localStorage.setItem("acuenta",acuenta)
+  document.getElementById("acuenta").value = acuenta
+  document.getElementById("saldo").value = (total-acuenta).toFixed(2)
+}
+///////////////////////////SECCION DE CALCULOS////////////////////
+
+/**** CREDITO CONTADO ******/
+async function radioDes(e){
+  desc = e.target.id
+  localStorage.setItem("descuento",desc)
+  for (const key in car) {
+    let itm = await read_ID_DB(key,"inventario")
+    car[key]["pu"] = desc=="15"?itm.puCont:itm.puCret
+    car[key]["tot"] = dc2(car[key]["cant"]*car[key]["pu"])
+    car[key]["puVent"] = itm.puVent
+  }
+  localStorage.setItem("carrito",JSON.stringify(car))
+  rederVenta()
+}
+/**** CREDITO CONTADO ******/
+
+/****** registar items en inventrario y venta ******/
+let cliente = storageJson("cliente")
+let du = storageJson("datUser")
+async function regVenta(){
+  if(!storageBolean("cliente")){ alert("estableser cliente"); return; }
+  let r = confirm("VENDER ...?")
+  if(r){
+    loadData()
+    let f = {}
+    f["id"] = new Date().getTime().toString()
+    f["fechVent"] = new Date().getTime()
+    f["dataVenden"] = {"nom":du.nom,"cel":du.cel}
+    f["cliente"] = cliente
+    f["proforma"] = car
+    f["descuento"] = desc
+    f["acuenta"] = acuenta
+    f["saldo"] = dc2(total-acuenta) 
+    f["total"] = dc2(total)
+    f["obs"] = storage("obs")
+    let c = await createdVenta(f)
+    if(c.std=="created"){
+      localStorage.setItem("cliente","")
+      localStorage.setItem("carrito","")
+      localStorage.setItem("descuento","")
+      localStorage.setItem("acuenta","")
+      localStorage.setItem("obs","")
+      document.getElementById("bntVender").style.display = "none"
+      f["numNot"]=c["numNot"]
+      await write_DB(f,'ventas')
+      sendMessage("vendido")
+      successDat()
+    }else{ alert("error") }
+  }
+}
+/****** registar items en inventrario y venta ******/
+
+async function quitarCarro(id){ 
+  delete car[id]; 
+  localStorage.setItem("carrito",JSON.stringify(car))
+  window.location.reload()
+}
+
+function informa(){
+  let obs = prompt("Observaciónes")
+  if(obs){
+    localStorage.setItem("obs",obs)
+    document.getElementById("informa").classList.add("informaRed")
+  }
+}
+
+function init_m(){  
+  rederVenta() 
+  document.getElementById(desc).checked = true 
+  document.getElementById("fecha").textContent = timeToMesDia(fecActSist)
+  if(storageBolean("obs")){
+    document.getElementById("informa").classList.add("informaRed")
+  }
+  openSocket(false);
+}
+</script>
+</body>
+</html>

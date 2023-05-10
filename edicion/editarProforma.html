@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>PEDIDO</title>
+<link href="../css/estylo.css" rel="stylesheet" type="text/css" media="all" />
+<style>
+#productosList{
+  overflow-y: scroll;
+  height: calc(100vh - 150px);
+  margin-top: 5px;
+}
+.registroCuentas{
+  width: 100%;
+  margin: auto;
+  display: flex;
+  justify-content: space-around;
+  margin-top: 10px;
+  height: 50px;
+}
+.radioPre{
+  padding: 5px;
+  display: flex;
+  justify-content: space-around;
+}
+.registroCuentas .contInput{ width: 100px;}
+.btn-material{ padding: 3px; }
+.conDow{
+  width: 50px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-left: 20px;
+}
+#conection{ margin-left: 15px;}
+</style>
+</head>
+<body onload="startDB();">
+<div class="conteMenu">
+  <span class="icon back" onclick="window.history.back()"></span>
+  <span id="conection"></span>   
+  <button onclick="regVenta()" id="bntVender" class="btn-material">EDITAR</button> 
+  <span id="informa" class="icon informa" onclick="informa()"></span>
+</div>  
+
+<div id="productosList"></div>
+
+<div class="registroCuentas">
+  <div class="contInput">
+    <input data-cli id="acuenta" onkeyup="acuentaBs()" class="input_ef" type="number" placeholder=" "/>
+    <label class="label_ef">Acuenta Bs.</label>
+  </div>
+  <div class="contInput">
+    <input data-cli id="saldo" class="input_ef" type="number" placeholder=" " disabled />
+    <label class="label_ef">Saldo: Bs.</label>
+  </div>
+  <div class="contInput">
+    <input data-cli id="sumaTotal" class="input_ef" type="number" placeholder=" " disabled />
+    <label class="label_ef">Total: Bs.</label>
+  </div>
+</div>
+
+<div class="radioPre" id="radioPre">
+  <label for="15">Contado <br> Descuento 15%
+    <input onclick="radioDes(event)"  type="radio" id="15" name="pre">
+  </label>
+  <label for="10">Credito <br> Descuento 10%
+    <input onclick="radioDes(event)"  type="radio" id="10" name="pre">
+  </label>
+</div>
+
+<script src="../js/apiBakend.js"></script>
+<script src="../js/mainDB.js"></script>
+<script>
+var car = storageJson("carritoEdit")
+var desc = storage("descuentoEdit")==""?"15":storage("descuentoEdit")
+function rederVenta(){
+  var outerHTML = '';
+  for (const key in car) {
+    outerHTML += 
+    `<div class="itemProf">
+      <div class="fila1">
+        <div class="fila1a">${car[key].produ}</div>
+        <div class="fila1b">
+          <span>${car[key].marca}</span>  
+          <span onclick="quitarCarro('${key}')" class="icon BORRAR"></span> 
+        </div>
+      </div>
+      <div class="filP2">
+        <input onkeyup="imprItem('${key}')" type="number" value="${car[key].cant}" id="${key}"/> 
+        <div>${car[key].unidad}</div>
+        <div>
+          <div>p/u.</div> 
+          <div>${car[key].pu}</div>
+        </div>
+        <div id="t_${key}">${car[key].tot.toFixed(2)}</div>
+      </div>
+    </div>`    
+  }
+  document.querySelector("#productosList").innerHTML = outerHTML;
+  sumaItems()
+  localStorage.setItem("carritoEdit",JSON.stringify(car))
+}
+function cambioPu(id){
+  let r = prompt("precio unitario")
+  if(r!=null){ 
+    car[id]["pu"] = parseFloat(r)  
+    if(desc=="15"){
+      car[id]["puVent"] = dc2(r/0.85) 
+    }else{
+      car[id]["puVent"] = dc2(r*100/90) 
+    }
+    car[id]["tot"] = dc2(car[id]["cant"]*car[id]["pu"])
+    localStorage.setItem("carrito",JSON.stringify(car))
+    rederVenta()
+  }
+}
+
+///////////////////////////SECCION DE CALCULOS////////////////////
+let acuenta = storageDef("acuentaEdit",0) 
+let total
+function sumaItems(){
+  total = 0
+  for (const key in car) {
+    let cant = car[key]["cant"]
+    let pu = car[key]["pu"]
+    total += pu*cant
+  }
+  document.getElementById("sumaTotal").value = total.toFixed(2)
+  document.getElementById("acuenta").value = acuenta
+  document.getElementById("saldo").value = (total-acuenta).toFixed(2)
+}
+function imprItem(id){
+  let pu = car[id]["pu"]
+  let cant = ValNum(id)
+  document.getElementById("t_"+id).textContent = (cant*pu).toFixed(2)
+  car[id]["cant"] = cant
+  car[id]["tot"] = dc2(cant*pu)
+  localStorage.setItem("carritoEdit",JSON.stringify(car))
+  sumaItems()
+}
+function acuentaBs(){
+  acuenta = ValNum("acuenta")
+  localStorage.setItem("acuentaEdit",acuenta)
+  document.getElementById("acuenta").value = acuenta
+  document.getElementById("saldo").value = (total-acuenta).toFixed(2)
+}
+///////////////////////////SECCION DE CALCULOS////////////////////
+/**** CREDITO CONTADO ******/
+async function radioDes(e){
+  desc = e.target.id
+  localStorage.setItem("descuento",desc)
+  for (const key in car) {
+    let itm = await read_ID_DB(key,"inventario")
+    car[key]["pu"] = desc=="15"?itm.puCont:itm.puCret
+    car[key]["tot"] = dc2(car[key]["cant"]*car[key]["pu"])
+    car[key]["puVent"] = itm.puVent
+  }
+  localStorage.setItem("carrito",JSON.stringify(car))
+  rederVenta()
+}
+/**** CREDITO CONTADO ******/
+
+/****** registar items en inventrario y venta ******/
+var cliente = storageJson("clienteEdit")
+var idVent = localStorage.getItem('idVenta')
+async function regVenta(){
+  if(cliente["cli"]==undefined){  alert("estableser cliente"); return; }else{
+    let r = confirm("Editar ...?")
+    if(r){
+      loadData()
+      let f = await read_ID_DB(idVent,'ventas')
+      f["cliente"] = cliente
+      f["proforma"] = car
+      f["descuento"] = desc
+      f["acuenta"] = acuenta
+      f["saldo"] = dc2(total-acuenta) 
+      f["total"] = total
+      let c_v = await updateVenta(f)
+      if(c_v=="update"){
+        localStorage.setItem("clienteEdit","")
+        localStorage.setItem("carritoEdit","")
+        localStorage.setItem("descuentoEdit","")
+        localStorage.setItem("acuentaEdit","")
+        document.getElementById("bntVender").style.display = "none"
+        let regVnt = await write_DB(f,'ventas')
+        sendMessage("ventaEditado")
+        successDat() 
+      }else{ alert("error") }
+    }
+  } 
+}
+/****** registar items en inventrario y venta ******/
+
+async function quitarCarro(id){ 
+  delete car[id]; 
+  localStorage.setItem("carritoEdit",JSON.stringify(car))
+  window.location.reload()
+}
+function informa(){
+  let obs = prompt("Observaciónes",storage("obsEdit"))
+  if(obs){
+    localStorage.setItem("obsEdit",obs)
+    document.getElementById("informa").classList.add("informaRed")
+  }
+}
+async function init_m(){
+  rederVenta()
+  document.getElementById(desc).checked = true 
+  if(storageBolean("obsEdit")){
+    document.getElementById("informa").classList.add("informaRed")
+  }
+  openSocket();
+}
+</script>
+</body>
+</html>

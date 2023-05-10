@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LISTA PEDIDOS</title>
+<link href="../css/estylo.css" rel="stylesheet" type="text/css" media="all" />
+<style>
+.contenTable{
+  width: 98%;
+  height: calc(100vh - 100px);
+  margin: auto;
+  margin-top: 10px;
+  overflow: scroll;
+  z-index: 1;
+}
+</style>
+</head>
+<body onload="startDB();">
+<div class="conteMenu">
+  <span class="icon back" onclick="window.history.back()"></span>
+  <div class="titMenu">LISTA PEDIDOS</div>
+  <span></span>
+</div>  
+
+<div class="buscador" >
+  <input type="text" id="buscar" class="input_ef" onkeyup="filter()" placeholder="Buscar por Nombre de Cliente">
+</div> 
+
+<div class="contenTable">
+  <table>
+    <thead>
+      <tr>
+        <td>Cliente</td>
+        <td>fecha</td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+    </thead>
+    <tbody id="listaDitem"></tbody>
+  </table>
+</div>
+
+<script src="../js/apiBakend.js"></script>
+<script src="../js/mainDB.js"></script>
+<script>
+var items
+async function verTodo(){
+  let dat = await read_DB('ventas')
+  dat.sort(((a, b) => a.fechVent - b.fechVent));
+  var outerHTML = '';
+  for (let i = 0; i < dat.length; i++) {
+    const el = dat[i];
+    outerHTML += 
+    `<tr id="${el.id}">
+      <td data-itm id="ref_${el.id}">${el.cliente["cli"]}</td>
+      <td>${timeToDiaMes(el.fechVent) }</td>
+      <td>
+        <span id="${el.id}_ey" onclick="verVenta('${el.id}')" class="icon Eyes">
+      </td>
+      <td>
+        <span id="${el.id}_ed" onclick="editarVenta('${el.id}')" class="icon PEN">
+      </td>
+      <td>
+        <span id="${el.id}_ed" onclick="verPdf('${el.id}')" class="icon pdf1">
+      </td>
+    </tr>`
+  }
+  document.querySelector("#listaDitem").innerHTML = outerHTML;
+  items = document.querySelectorAll('[data-itm]')
+}
+
+async function editarVenta(id){
+  localStorage.setItem('idVenta', id);
+  let ven = await read_ID_DB(id,'ventas')
+  localStorage.setItem("carritoEdit",JSON.stringify(ven.proforma))
+  localStorage.setItem("acuentaEdit",ven.acuenta)
+  localStorage.setItem('clienteEdit',JSON.stringify(ven.cliente));
+  localStorage.setItem('descuentoEdit', ven.descuento);
+  localStorage.setItem('obsEdit', ven.obs);
+  lnk('../edicion/editarMovil')
+}
+function verVenta(id){
+  localStorage.setItem('idVenta', id);
+  lnk('verVenta')
+}
+function verPdf(idVent){
+  localStorage.setItem('idVenta', idVent);
+  lnk("pdfVenta")
+}
+
+function init_m(){  verTodo()  } 
+</script>
+</body>
+</html>

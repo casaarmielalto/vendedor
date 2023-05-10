@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="../css/estylo.css">
+<title>Login</title>
+<style>
+.btn-material{ width: 250px; }
+#nombre{
+  text-align: center;
+  padding: 10px;
+  font-weight: bold;
+}
+</style>
+</head>
+<body onload="startDB();">
+<div class="conteMenu">
+  <span class="icon back" onclick="window.history.back()"></span>
+  <div class="titMenu">LOGIN</div>
+  <span></span>
+</div>
+<div id="nombre"></div>
+<div class="formularioV1">
+  <div id="input">
+    <div class="contInput">
+      <input data-cli id="email" onkeyup="teclaEnter(event)" class="input_ef" type="email" placeholder=" "/>
+      <label class="label_ef">Correo</label>
+    </div>
+    <div class="contInput">
+      <input data-cli id="password" onkeyup="teclaEnter(event)" class="input_ef" type="password" placeholder=" "/>
+      <label class="label_ef">Contraseña</label>
+    </div>
+  </div>
+  <div class="botones">
+    <button id="login" class="btn-material"  onclick="login()">INICIAR SECION</button>
+    <button id="logout" class="btn-material hiden verde"  onclick="outUser()">CERRAR SECION</button>
+  </div>
+  <div class="botones">
+    <button class="btn-material hiden red" id="pasword" onclick="lnk('cambioPasword')">CAMBIAR CONTRASEÑA</button>
+  </div>
+</div>
+
+<div id="secDescarga" class="hiden">
+  <div class="botones">
+    <span class="btn-material" onclick="sincroCLI()">ACTUALIZAR CLIENTES</span>
+  </div>
+  <div class="botones">
+    <span class="btn-material" onclick="sincroINV()">ACTUALIZAR INVENTARIO</span>
+  </div>
+  <div class="botones">
+    <span class="btn-material" onclick="lnk('../ventas/descargaVentas')">ACTUALIZAR VENTAS</span>
+  </div>
+</div>
+
+<script src="../js/apiBakend.js"></script>
+<script src="../js/mainDB.js"></script>
+<script>
+async function init_m(){ 
+  if(storageBolean('datUser')){
+    document.getElementById("login").classList.add("hiden")
+    document.getElementById("input").classList.add("hiden")
+    document.getElementById("logout").classList.remove("hiden")
+    document.getElementById("pasword").classList.remove("hiden")
+    document.getElementById("nombre").textContent = storageJson("datUser").nom
+    document.getElementById("secDescarga").classList.remove("hiden")
+  }
+}
+
+/////////////// LOGIN //////////////
+function teclaEnter(event) { if(event.keyCode == '13'){ login() } }
+/*******login********/
+async function login(){
+  var email = document.getElementById('email').value;
+  var psw = document.getElementById('password').value;
+  loadData()
+  let sig = await loginUser(email, psw)
+  if(sig.std=="success"){
+    localStorage.setItem("datUser",JSON.stringify(sig));
+    init_m()
+  }
+  if(sig.std=="emptyUser"){
+    console.log("emptyUser")
+  }
+  if(sig.std=="errorPsw"){
+    console.log("errorPsw")
+  }
+  successDat(true)
+}
+/*******login********/
+/*logout*/
+async function outUser(){
+  loadData()
+  console.log('no existe usuario activo') 
+  localStorage.setItem("datUser","");
+  localStorage.setItem("timeVEN",""); 
+  document.getElementById("login").classList.remove("hiden")
+  document.getElementById("logout").classList.add("hiden")
+  document.getElementById("secDescarga").classList.add("hiden")
+  successDat(true)
+}
+/*logout*/
+/////////////// LOGIN //////////////
+</script>  
+</body>
+</html>

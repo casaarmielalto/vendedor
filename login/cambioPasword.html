@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es" >
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>CONFIGURACION</title>
+<link rel="stylesheet" href="../css/estylo.css">
+<style>
+.btn-material{width: 100px;padding: 7px;}
+</style>  
+</head>
+<body onload="startDB();">
+<div class="conteMenu">
+  <span class="icon back" onclick="window.history.back()"></span>
+  <div class="titMenu">CAMBIO DE CONTRASEÑA</div>
+  <span></span>
+</div>
+
+<div class="formularioV1">
+  <div class="contInput">
+    <input  id="userU" class="input_ef" type="text" placeholder="" autocomplete="off"/>
+    <label class="label_ef">Usuario :</label>
+  </div>
+  <div class="contInput">
+    <input id="codUserA" class="input_ef" type="text" placeholder="" autocomplete="off"/>
+    <label class="label_ef">Contraseña anterior :</label>
+  </div>
+  <div class="contInput">
+    <input id="codUserN" class="input_ef" type="text" placeholder="" autocomplete="off"/>
+    <label class="label_ef">Contraseña nueva :</label>
+  </div>
+  <div class="botones">
+    <button class="btn-material verde" id="btnGuar" onclick="nuevoPasword()">Cambiar</button>
+    <button class="btn-material red" id="btnGuar" onclick="window.history.back()">Cancelar</button> 
+  </div> 
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.3.1/firebase-app.js"></script> 
+<script src="https://www.gstatic.com/firebasejs/8.3.1/firebase.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.3.1/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.3.1/firebase-auth.js"></script>
+<script src="../js/confire.js"></script>
+<script src="../js/mainDB.js"></script>
+<script>
+function init_m(){ }
+
+function nuevoPasword(){
+  var r = confirm("Esta Seguro de Cambiar \n La contraseña");
+  if(r==true){
+    let paswNew = document.getElementById("codUserN").value
+    if (paswNew.indexOf(" ") !== -1) {
+      alert("La contraseña no puede contener espacios en blanco");
+      return false;
+    }
+    if (paswNew.length < 5) {
+      alert("La contraseña debe contener mas de 6 caracteres");
+      return false;
+    }
+    if((new RegExp(/[&\/\\#,+()$~%.'":*?<>{}]/g,"i").test(paswNew)) ){ 
+      alert("La contraseña solo debe contener letra o numeros");
+      return false;     
+    } 
+
+    let usuario = document.getElementById("userU").value+"@sistema.com"
+    let pasContra = document.getElementById("codUserA").value
+    loadData() 
+    at.signInWithEmailAndPassword(usuario, pasContra).then(function(){
+      const user = firebase.auth().currentUser;
+      user.updatePassword(paswNew).then(() => {
+        successDat() 
+        window.location.reload()
+      }).catch((error) => { console.log(error) });
+    }).catch(function(error) {console.log(error) });
+  }
+}
+
+</script>
+</body>
+</html>

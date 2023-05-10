@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLIENTE</title>
+<link href="../css/estylo.css" rel="stylesheet" type="text/css" media="all" />
+<style>
+.info{width: 100px;} 
+</style>
+</head>
+<body onload="startDB();">
+<div class="conteMenu">
+  <span class="icon back" onclick="window.history.back()"></span>
+  <div class="titMenu">REGISTRAR NUEVO CLIENTE</div>
+  <span></span>  
+</div>     
+
+<div class="formularioV1">
+
+  <div class="contInput">
+    <input data-itemN id="cli" class="input_ef" type="text" placeholder=" " />
+    <label class="label_ef">Cliente</label>
+  </div>
+  <div class="contInput">
+    <input data-itemN id="cel" class="input_ef" type="number" placeholder=" " />
+    <label class="label_ef">Celular</label>
+  </div>
+  <div class="contInput">
+    <input data-itemN id="dir" class="input_ef" type="text" placeholder=" "/>
+    <label class="label_ef">Direccion</label>
+  </div>
+  <div class="contInput">
+    <input data-itemN id="zona" class="input_ef" type="text" placeholder=" " />
+    <label class="label_ef">Zona</label>
+  </div>
+  <div class="contInput">
+    <input data-itemN id="nit" class="input_ef" type="text" placeholder=" " />
+    <label class="label_ef">Nit</label>
+  </div>
+  <div class="botones">
+    <div onclick="regItem()" class="btn-material info">Registrar</div> 
+  </div>
+</div>
+
+<script src="../js/apiBakend.js"></script>
+<script src="../js/mainDB.js"></script>
+<script>
+
+async function regItem(){
+  loadData()
+  var f = await form_to_json("itemN") 
+  f["id"] = new Date().getTime().toString()
+  f["upCloud"] = true
+  let crea = await cu_clientes(f)
+  if(crea=="created" || crea=="newCreated"){
+    let upLocal = await  write_DB(f,'clientes')
+    formClearInput("itemN")
+    successDat()
+  }
+}
+
+function init_m(){ }   
+</script> 
+</body>
+</html>

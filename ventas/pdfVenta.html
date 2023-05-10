@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF</title>
+<link href="../css/estylo.css" rel="stylesheet" type="text/css" media="all" />
+<style>
+#wrapper{height: calc(100vh - 50px);}
+#wrapper>object{ height: calc(100vh - 50px);}
+#output{width: 100%;}
+#pdfviewer {
+  border: 1px #333 solid;
+  width: 100%;
+  background: #eee;
+}
+.flecha{
+  color: white;
+  font-size: 25px;
+}
+</style>
+</head>
+<body onload="startDB();">
+<div class="conteMenu">
+  <span class="icon back" onclick="window.history.back()"></span>
+  <span class="flecha" onclick="prevH()">←</span>
+  <span class="flecha" onclick="nextH()">→</span>
+  <span onclick="update(true)" class="icon pdfWite"></span>
+</div>
+
+<div id="wrapper" style="display: none;">
+  <object id="output" type="application/pdf">It appears you don't have PDF support in this web browser. </object>
+</div>
+
+<canvas id="pdfviewer" style="display: none;"></canvas>
+
+<script src='../js/pdf.js'></script>
+<script src="../js/numberToString.js"></script>
+<script src="../js/jspdf.min.js"></script>
+<script src="../js/jspdf.plugin.autotable.js"></script>  
+<script src="../js/mainDB.js"></script>
+<script>
+/*ver pdf en canvas*/
+const pdfjsLib = window["pdfjs-dist/build/pdf"];
+pdfjsLib.GlobalWorkerOptions.workerSrc = "../js/pdf.worker.js";
+pdfDoc = null,
+pageRendering = false,
+pageNumPending = null,
+scale = 2,
+canvas = document.getElementById("pdfviewer"),
+ctx = canvas.getContext("2d");
+function renderPage(num) {
+  pageRendering = true;
+  pdfDoc.getPage(num).then(function (page) {
+    const viewport = page.getViewport({ scale });
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+    var renderContext = {canvasContext: ctx, viewport: viewport };
+    var renderTask = page.render(renderContext);
+    renderTask.promise.then(function () {
+      pageRendering = false;
+      if (pageNumPending !== null) {
+        renderPage(pageNumPending);
+        pageNumPending = null;
+      }
+    });
+  });
+}
+let hj = 1
+let maxNum
+function pdf_ver(){
+  pdfjsLib.getDocument({data: pdfData}).promise.then(function (pdfDoc_) {
+    maxNum = (pdfDoc_._pdfInfo).numPages
+    pdfDoc = pdfDoc_;
+    renderPage(hj);
+  });
+}
+function nextH(){
+  if(hj<maxNum){ 
+    hj +=1
+    renderPage(hj); 
+  }
+}
+function prevH(){
+  if(hj>1){ 
+    hj -=1
+    renderPage(hj); 
+  }
+}
+/*ver pdf en canvas*/
+
+var idVenta = localStorage.getItem('idVenta')
+var doc = new jsPDF({orientation:'p',unit:'mm',format:'letter'});
+var cabeza = {
+  Producto: 'Producto', 
+  Marca: 'Marca', 
+  Cantidad: 'Cantidad', 
+  lista: 'lista', 
+  porcentage: '%',
+  Descontado: 'Descontado',
+  Total: 'Total',
+}
+
+var DatVent
+var cuerpo = []
+let numFil
+var diaV
+var mesV
+var yearV
+async function leer_Venta(){
+  DatVent = await read_ID_DB(idVenta,'ventas')
+  const prof = DatVent["proforma"]
+  for (const key in prof) {
+    const item = prof[key];
+    cuerpo.push({
+      Producto:item["produ"],
+      Marca:item["marca"],
+      Cantidad:item["cant"],
+      lista:item["puVent"],
+      porcentage:DatVent["descuento"],
+      Descontado: item["pu"],
+      Total: item["tot"]
+    })  
+  }
+  cuerpo = cuerpo.sort((x, y) => x.Producto.localeCompare(y.Producto));
+  numFil = cuerpo.length-1
+  diaV = ((new Date(DatVent["fechVent"])).getDate()).toString()
+  mesV = nombreMeses[(new Date(DatVent["fechVent"])).getMonth()] 
+  yearV = (new Date(DatVent["fechVent"])).getFullYear().toString()
+  datosPdf()
+}
+
+async function datosPdf(){
+  let posiconY = 20
+
+  var logo = new Image();
+  logo.src = '../images/logo.png';
+  doc.addImage(logo, 'PNG', 15, posiconY-10, 25, 10)
+  let tx1 = await tx(15,100,100,100,"PRONAMED", 40, posiconY,"courier","bolditalic")
+  let tx2 = await tx(17,255,0,0,"NOTA DE ENTREGA", 75, posiconY,"courier","bolditalic")
+  /*fecha*/
+  var Xf = -10
+  var Yf = posiconY-35
+  let [rf,gf,bf] = [250,225,225]
+  let fzf = 10
+  let c1 = await rect(255,0,0,0.1,rf,gf,bf,147+Xf,25+Yf,15,12)
+  let tx3 = await tx(fzf,0,0,0,"DIA", 150+Xf, 30+Yf,"courier","bolditalic")
+  let tx4 = await tx(fzf,0,0,0,diaV, 150+Xf, 35+Yf,"courier","bolditalic")
+  let c2 = await rect(255,0,0,0.1,rf,gf,bf,162+Xf, 25+Yf, 35, 12)
+  let tx5 = await tx(fzf,0,0,0,"MES", 165+Xf, 30+Yf,"courier","bolditalic")
+  let tx6 = await tx(fzf,0,0,0,mesV, 165+Xf, 35+Yf,"courier","bolditalic")
+  let c3 = await rect(255,0,0,0.1,rf,gf,bf,197+Xf, 25+Yf, 18, 12)
+  let tx7 = await tx(fzf,0,0,0,"AÑO", 200+Xf, 30+Yf,"courier","bolditalic")
+  let tx8 = await tx(fzf,0,0,0,yearV, 200+Xf, 35+Yf,"courier","bolditalic")
+  /*fecha*/
+  /*codigo de la nota*/
+  let c4 = await rect(0,0,0,0.1,255,255,255,190+Xf, 40+Yf, 25, 7)
+  let tx9 = await tx(12,0,0,0,"Codigo", 173+Xf, 45+Yf,"courier","bolditalic")
+  let tx10 = await tx(15,0,0,0,DatVent["numNota"].toString(), 193+Xf, 45+Yf,"courier","bolditalic")
+  /*codigo de la nota*/
+  /*nit*/
+  let c5 = await rect(0,0,0,0.1,255,255,255,175+Xf, 50+Yf, 40, 7)
+  let tx11 = await tx(12,0,0,0,"Nit", 165+Xf, 55+Yf,"courier","bolditalic")
+  let tx12 = await tx(15,0,0,0,(DatVent.cliente).nit, 176+Xf, 55+Yf,"courier","bolditalic")
+  /*nit*/
+  /*telefonos*/
+  let tx13 = await tx(8,0,0,0,"cel.:77255168-78760227", 15, 30,"courier")
+  /*telefonos*/
+  const y1 = 30
+  const x1 = 15
+  const l1 = 7 
+  let cli = (DatVent.cliente)["cli"]=="Ninguno"?"":(DatVent.cliente)["cli"]
+  let obs = DatVent["descuento"]=="10"?"Credito 10%":"Contado 15%"
+  var col1 = [
+    ["Señor(es): ",x1,(y1+1*l1)],[cli,40,(y1+1*l1)],
+    ["Celular: ",x1,(y1+2*l1)],[(DatVent.cliente)["cel"].toString(),35,(y1+2*l1)],
+    ["Direccion: ",x1,(y1+3*l1)],[(DatVent.cliente)["dir"],40,(y1+3*l1)],
+    ["Zona: ",x1,(y1+4*l1)],[(DatVent.cliente)["zona"],27,(y1+4*l1)],
+    ["Observaciones:",x1,(y1+5*l1)],[obs,50,(y1+5*l1)],
+  ]
+  for (let i = 0; i < col1.length; i++) {
+    const e = col1[i];
+    let wr = await tx(11,0,0,0,e[0],e[1],e[2])
+  }
+
+  const y2 = 40
+  const x2 = 130
+  const l2 = 7 
+  var col2 = [
+    ["Vendedor: ",x2,(y2+1*l2)],[(DatVent.dataVenden)["nom"],153,(y2+1*l2)],
+    ["Celular Vendedor: ",x2,(y2+2*l2)],[(DatVent.dataVenden)["cel"].toString(),171,(y2+2*l2)],
+  ]
+  for (let i = 0; i < col2.length; i++) {
+    const e = col2[i];
+    let wr = await tx(11,0,0,0,e[0],e[1],e[2])
+  }
+  
+  /*tabla*/
+  doc.autoTable({
+    startY: 75,
+    columnStyles: { Producto: {cellWidth: 60},Marca: {cellWidth: 20},Descontado: {textColor: [0, 0, 255],fontStyle:'bold'}, },
+    margin: {left:15,right: 10,bottom: 50},
+    head: [cabeza],
+    headStyles: {fillColor:[255, 255, 255],fontSize:10,textColor:[0, 0, 0]},
+    body: cuerpo,
+    didDrawCell: (data) => {
+      if (data.section === 'body' && data.column.index == "Total" && data.row.index == numFil) {
+        doc.setFontSize (8);
+        doc.setTextColor (0,0,0);
+        doc.setFont("helvetica");
+        doc.setFontType("bold");
+        doc.text(data.cell.x -175, data.cell.y+15,"Son : " +numeroALetras(Math.trunc(DatVent["total"]))+" "+(DatVent["total"].toFixed(2)).split(".")[1] +"/100 Bs.")
+        doc.setFontSize (11);
+        doc.setTextColor (0,0,255);
+        doc.setFont("helvetica");
+        doc.setFontType("bold");
+        doc.text(data.cell.x + 0, data.cell.y+15, DatVent["total"].toFixed(2)+ " Bs.")
+        doc.setFontSize (10);
+        doc.setTextColor (255,0,0);
+        doc.setFont("courier");
+        doc.text(data.cell.x + -175, data.cell.y+25, 'NOTA: Una vez retirada la mercaderia no se aceptan cambios ni devoluciones GRACIAS...')
+      }  
+    },
+  });
+  /*tabla*/
+  /***pie de firma***/
+  let posYpie = 265
+  let ln1 = await lin(0,0,0,0.1,50, posYpie-5, 90, posYpie-5)
+  let tx14 = await tx(10,0,0,0,"Entregue conforme", 55, posYpie,"helvetica","bold")
+  let ln2 = await lin(0,0,0,0.1,130, posYpie-5, 170, posYpie-5)
+  let tx15 = await tx(10,0,0,0,"Recibido conforme", 135, posYpie,"helvetica","bold")
+ /***pie de firma***/
+ update(false)
+}; 
+
+
+function tx(f,r,g,b,t,x,y,l,fnt,fn){
+  return new Promise(function(resolve,reject){  
+    doc.setFontSize (f);
+    doc.setTextColor (r,g,b);
+    if(fn!=undefined){doc.setFont(fn)}//courier
+    if(fnt!=undefined){doc.setFontType(fnt)}//bolditalic
+    doc.text(t, x, y);
+    resolve(true)
+  }) 
+}
+function rect(r,g,b,l,rr,gg,bb,xf,yf,xi,yi){
+  return new Promise(function(resolve,reject){  
+    doc.setDrawColor (r,g,b);
+    doc.setLineWidth (l); 
+    doc.setFillColor(rr,gg,bb);
+    doc.rect(xf,yf,xi,yi,'FD');///
+    resolve(true)
+  }) 
+}
+function lin(r,g,b,w,xf,yf,xi,yi){
+  return new Promise(function(resolve,reject){  
+    doc.setDrawColor (r,g,b);
+    doc.setLineWidth (w); 
+    doc.line (xf,yf,xi,yi);
+    resolve(true)
+  }) 
+}
+function update(shouldDownload) {
+  doc.setProperties({title:'nota de venta',subject:'nota de venta'});
+  if (shouldDownload) {
+    doc.save(DatVent["cliente"].cli+'.pdf');
+  }else{
+    if( navigator.userAgent.match(/Android/i) ){
+      pdfData = atob(doc.output('datauristring').split(",")[1])
+      pdf_ver() 
+    }else{
+      document.getElementById("output").data = doc.output('datauristring');
+    }
+  }
+}
+
+function init_m(){ 
+  leer_Venta() 
+  if( navigator.userAgent.match(/Android/i) ){
+    document.getElementById("pdfviewer").style.display = ""
+  }else{
+    document.getElementById("wrapper").style.display = ""
+  }
+}
+</script>   
+</body>
+</html>

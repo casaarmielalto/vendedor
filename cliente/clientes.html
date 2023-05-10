@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLIENTES</title>
+<link href="../css/estylo.css" rel="stylesheet" type="text/css" media="all" />
+<style>
+</style>
+</head>
+<body onload="startDB();">
+<div class="conteMenu">
+  <span class="icon back" onclick="window.history.back()"></span>
+  <div onclick="lnk('../cliente/formReg_clientes')" class="btn-material">Nuevo Cliente</div> 
+  <span onclick="sincroDBclientes()" class="icon cloud-download-alt"></span>
+  <span onclick="listVer()" class="icon menuSvg"></span>  
+</div>   
+
+<div class="buscador">
+  <input class="input_ef" size="10" type="text" id="buscar" onkeyup="filter()" placeholder="Buscar Nombre">  
+</div>
+
+<div class="secionCheck">
+  <div id="contedOcultador" class="contedOcultador"></div>
+</div>
+
+<div class="contenTable">
+  <table onclick="oculVer()">
+    <thead>
+      <tr id="headColm">
+        <th onclick="sortTable('cli','str')">N°</th>
+        <th onclick="sortTable('cli','str')">Cliente</th>
+        <th onclick="sortTable('cel','str')">Celular</th>
+        <th onclick="sortTable('dir','str')">Direccion</th>
+        <th onclick="sortTable('zona','int')">Zona</th>
+        <th onclick="sortTable('nit','str')">Nit</th>
+        <th>Edit.</th>
+      </tr>
+    </thead>
+    <tbody id="listaDitem"></tbody>
+  </table>
+</div>
+
+<script src="../js/apiBakend.js"></script>
+<script src="../js/mainDB.js"></script>
+<script>
+var items = []
+async function leerDatos(d){
+  let dat = d==undefined?await read_DB('clientes'):d
+  var outerHTML = '';
+  for (let i = 0; i < dat.length; i++){
+    const el= dat[i];
+    outerHTML += 
+    `<tr id="${el.id}">
+      <td>${i+1}</td>
+      <td>${el.cli}</td>
+      <td>${el.cel}</td>
+      <td>${el.dir}</td>
+      <td>${el.zona}</td>
+      <td>${el.nit}</td>
+      <td>
+        <span onclick="editar('${el.id}')" class="icon PEN">
+      </td>
+    </tr>` 
+    items.push({"id":el.id,"txt":el.cli})    
+  }
+  document.querySelector("#listaDitem").innerHTML = outerHTML;
+  manejoColumnas("clientes") 
+}
+function filter(){
+  const text = document.getElementById("buscar").value.toUpperCase()
+  for (let i = 0; i < items.length; i++) {
+    const txtItm = items[i].txt.toUpperCase()
+    const idItm = items[i].id
+    if(txtItm.indexOf(text) > -1){ document.getElementById(idItm).style.display = "" }else{ document.getElementById(idItm).style.display = "none" }
+  }
+}
+
+function editar(id){
+  localStorage.setItem('idCliente', id);
+  lnk('../cliente/formEdit_clientes')
+}
+function init_m(){
+  leerDatos()
+}   
+</script>
+</body>
+</html>
